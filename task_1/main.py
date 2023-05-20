@@ -17,13 +17,13 @@ class QuestionRequest(BaseModel):
 
 
 @app.post('/quiz')
-def get_quiz_questions(request: QuestionRequest):
+def get_quiz_questions(request: QuestionRequest) -> list[QuizQuestion]:
     db = SessionLocal()
-    questions = []
+    questions: list[QuizQuestion] = []
     while len(questions) < request.questions_num:
         response = requests.get(f'https://jservice.io/api/random?count={request.questions_num}')
         response.raise_for_status()
-        quiz_data = response.json()
+        quiz_data: list[dict] = response.json()
         for data in quiz_data:
             question = db.query(QuizQuestion).filter_by(question_text=data['question']).first()
             if question:
