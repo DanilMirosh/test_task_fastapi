@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 import requests
 from fastapi import FastAPI
@@ -16,14 +17,20 @@ class QuestionRequest(BaseModel):
     questions_num: int
 
 
-@app.post('/quiz')
-def get_quiz_questions(request: QuestionRequest) -> list[QuizQuestion]:
+class QuizQuestionResponse(BaseModel):
+    question_text: str
+    answer_text: str
+    created_date: datetime
+
+
+@app.post('/quiz', response_model=List[QuizQuestionResponse])
+def get_quiz_questions(request: QuestionRequest) -> List[QuizQuestionResponse]:
     db = SessionLocal()
-    questions: list[QuizQuestion] = []
+    questions = []
     while len(questions) < request.questions_num:
         response = requests.get(f'https://jservice.io/api/random?count={request.questions_num}')
         response.raise_for_status()
-        quiz_data: list[dict] = response.json()
+        quiz_data = response.json()
         for data in quiz_data:
             question = db.query(QuizQuestion).filter_by(question_text=data['question']).first()
             if question:
@@ -36,6 +43,10 @@ def get_quiz_questions(request: QuestionRequest) -> list[QuizQuestion]:
             db.add(new_question)
             db.commit()
             db.refresh(new_question)
-            questions.append(new_question)
+            questions.append(QuizQuestionResponse(
+                question_text=new_question.question_text,
+                answer_text=new_question.answer_text,
+                created_date=new_question.created_date
+            ))
     db.close()
     return questions[-request.questions_num:]
