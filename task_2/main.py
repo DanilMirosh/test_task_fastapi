@@ -6,9 +6,11 @@ import ffmpeg
 from fastapi.responses import FileResponse
 
 from models import User, AudioRecord
+from database import SessionLocal, Base, engine
 
-SessionLocal = 1
 app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
 
 
 class CreateUserRequest(BaseModel):
